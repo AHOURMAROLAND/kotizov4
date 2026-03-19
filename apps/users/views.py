@@ -16,6 +16,8 @@ from .services import (
     creer_token, verifier_token, verifier_blocage_connexion,
     enregistrer_echec_connexion, reset_echecs_connexion
 )
+from apps.core.email_router import envoyer_email, template_verification, template_reset_password, template_alerte_securite
+from apps.core.whatsapp import envoyer_otp, envoyer_alerte_securite
 
 User = get_user_model()
 
@@ -35,9 +37,13 @@ def inscription(request):
     if user.telephone_whatsapp:
         token_wa = creer_token(user, 'whatsapp', 'inscription')
 
-    # TODO etape 1.4 : envoyer via email_router et whatsapp client
-    # envoyer_email_verification(user, token_email)
-    # envoyer_wa_verification(user, token_wa)
+    envoyer_email(
+        user.email,
+        'Verifiez votre compte Kotizo',
+        template_verification(user.prenom, token_email.token)
+    )
+    if token_wa and user.telephone_whatsapp:
+        envoyer_otp(user.telephone_whatsapp, user.prenom, token_wa.token, 'verification')
 
     return Response({
         'message': 'Compte cree. Verifiez votre email ou WhatsApp.',
@@ -175,8 +181,13 @@ def changer_mot_de_passe(request):
     for token in OutstandingToken.objects.filter(user=user):
         BlacklistedToken.objects.get_or_create(token=token)
 
-    # TODO etape 1.4 : envoyer alerte securite WhatsApp
-    # envoyer_alerte_securite_wa(user, 'changement_mot_de_passe')
+    if user.telephone_whatsapp:
+        envoyer_alerte_securite(user.telephone_whatsapp, user.prenom, 'changement_mot_de_passe')
+    envoyer_email(
+        user.email,
+        'Alerte securite Kotizo',
+        template_alerte_securite(user.prenom, 'changement_mot_de_passe')
+    )
 
     return Response({'message': 'Mot de passe modifie. Reconnectez-vous.'})
 
@@ -203,11 +214,14 @@ def reset_password_demande(request):
 
     token = creer_token(user, canal, 'reset_password')
 
-    # TODO etape 1.4 : envoyer le token
-    # if canal == 'whatsapp':
-    #     envoyer_otp_wa(user, token.token)
-    # else:
-    #     envoyer_email_reset(user, token.token)
+    if canal == 'whatsapp':
+        envoyer_otp(user.telephone_whatsapp, user.prenom, token.token, 'reset_password')
+    else:
+        envoyer_email(
+            user.email,
+            'Reinitialisation de mot de passe Kotizo',
+            template_reset_password(user.prenom, token.token)
+        )
 
     return Response({
         'message': 'Si ce compte existe, un code a ete envoye.',
@@ -240,7 +254,12 @@ def reset_password_confirmer(request):
     for t in OutstandingToken.objects.filter(user=user):
         BlacklistedToken.objects.get_or_create(token=t)
 
-    # TODO etape 1.4 : alerte securite WhatsApp
-    # envoyer_alerte_securite_wa(user, 'reset_password')
+    if user.telephone_whatsapp:
+        envoyer_alerte_securite(user.telephone_whatsapp, user.prenom, 'reset_password')
+    envoyer_email(
+        user.email,
+        'Alerte securite Kotizo',
+        template_alerte_securite(user.prenom, 'reset_password')
+    )
 
     return Response({'message': 'Mot de passe reinitialise avec succes'})
