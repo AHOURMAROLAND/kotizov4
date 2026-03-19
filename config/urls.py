@@ -10,4 +10,5 @@ urlpatterns = [
     path('api/agent/', include('apps.agent_ia.urls')),
     path('api/admin-panel/', include('apps.admin_panel.urls')),
     path('api/core/', include('apps.core.urls')),
+    path('api/logs/', include('apps.logs.urls')),
 ]
