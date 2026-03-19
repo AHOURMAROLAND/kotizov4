@@ -1,0 +1,21 @@
+version: '3.8'
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: kotizo_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  evolution:
+    image: atendai/evolution-api:latest
+    container_name: kotizo_evolution
+    ports:
+      - "8080:8080"
+    volumes:
+      - evolution_data:/evolution/instances
+
+volumes:
+  redis_data:
+  evolution_data:
