@@ -1,16 +1,35 @@
-import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import React, { useEffect, useState } from 'react';
+import { Text, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
+import api from '../../services/api';
+import { Colors } from '../../utils/colors';
 
-export default function PlaceholderScreen({ route }) {
-  const nom = route?.name || "Ecran";
+export default function QuickPayEnvoyesScreen() {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.get('/paiements/quickpay/mes/')
+      .then(r => setItems(r.data.envoyes))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <ActivityIndicator color={Colors.primary} style={{ marginTop: 40 }} />;
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.text}>{nom}</Text>
-    </View>
+    <FlatList
+      data={items}
+      keyExtractor={i => i.id.toString()}
+      contentContainerStyle={styles.liste}
+      ListEmptyComponent={<Text style={styles.vide}>Aucun QuickPay envoye</Text>}
+      renderItem={({ item }) => (
+        <Text style={styles.item}>{item.montant} FCFA — {item.statut}</Text>
+      )}
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#fff" },
-  text: { fontSize: 18, color: "#2563EB", fontWeight: "bold" },
+  liste: { padding: 16, gap: 12 },
+  item: { backgroundColor: Colors.white, borderRadius: 16, padding: 16, fontSize: 15, color: Colors.black },
+  vide: { textAlign: 'center', color: Colors.grey, marginTop: 40, fontSize: 15 },
 });
